@@ -53,7 +53,7 @@ speedrun-<repo-name>/
 Every newly generated Code Speedrun now includes a visual teaching stage powered by
 [Answer me with HTML](https://github.com/QingYunA/answer-me-with-html).
 After executing and verifying the units, the Skill writes an `learning/overview.md`
-and a Markdown draft for every unit, then renders matching self-contained HTML
+and a Markdown draft for every unit, captures verified execution evidence for each unit, then renders matching self-contained HTML
 pages using the upstream `am` CLI.
 
 The overview provides an architecture and learning map; each unit page combines
@@ -67,8 +67,9 @@ remain available, and HTML is explicitly reported as pending while runnable code
 remains unaffected.
 
 ```bash
-python /path/to/code-speedrun/scripts/render_learning_pages.py speedrun-<repo-name>
-python /path/to/code-speedrun/scripts/verify_speedrun.py --require-html speedrun-<repo-name>
+python /path/to/code-speedrun/scripts/unit_evidence.py check speedrun-<repo-name>
+python /path/to/code-speedrun/scripts/render_learning_pages.py speedrun-<repo-name> --require-evidence
+python /path/to/code-speedrun/scripts/verify_speedrun.py --require-html --require-evidence speedrun-<repo-name>
 ```
 
 ## Usage
