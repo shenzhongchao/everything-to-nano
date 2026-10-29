@@ -42,13 +42,14 @@ speedrun-<repo-name>/
 
 ## 自动生成可视化讲解
 
-Code Speedrun 现在把 [Answer me with HTML](https://github.com/QingYunA/answer-me-with-html) 纳入 **Skill 的默认生成流程**，不再只输出代码和 README。每个新生成的 Speedrun 会先构建并验证可执行 Unit，再由 Agent 编写真实代码对应的讲解稿，调用上游 `am` CLI 渲染独立 HTML：
+Code Speedrun 现在把 [Answer me with HTML](https://github.com/QingYunA/answer-me-with-html) 纳入 **Skill 的默认生成流程**，不再只输出代码和 README。每个新生成的 Speedrun 会先构建并验证可执行 Unit，并为每个 Unit 捕捉实际运行证据（命令、输出、源码哈希和修改实验），再由 Agent 基于证据编写讲解稿，调用上游 `am` CLI 渲染独立 HTML：
 
 ```text
 speedrun-<repo-name>/
 ├── README.md
 ├── SIMPLIFICATIONS.md
 ├── learning/
+│   ├── evidence/unit-N-xxx.json
 │   ├── overview.md / overview.html
 │   ├── unit-1-overall.md / unit-1-overall.html
 │   ├── unit-2-<slug>.md / unit-2-<slug>.html
@@ -65,8 +66,9 @@ speedrun-<repo-name>/
 验证：
 
 ```bash
-python /path/to/code-speedrun/scripts/render_learning_pages.py speedrun-<repo-name>
-python /path/to/code-speedrun/scripts/verify_speedrun.py --require-html speedrun-<repo-name>
+python /path/to/code-speedrun/scripts/unit_evidence.py check speedrun-<repo-name>
+python /path/to/code-speedrun/scripts/render_learning_pages.py speedrun-<repo-name> --require-evidence
+python /path/to/code-speedrun/scripts/verify_speedrun.py --require-html --require-evidence speedrun-<repo-name>
 ```
 
 ## 核心设计决策
