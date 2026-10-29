@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 import re
@@ -77,13 +78,62 @@ def validate_draft(source: Path) -> bytes:
     return data
 
 
-def check(root: Path, expected: list[tuple[Path, Path]]) -> None:
+def evidence_snapshot(root: Path, expected: list[tuple[Path, Path]]) -> dict[str, str]:
+    """Validate all Unit evidence and actual source excerpts before HTML rendering."""
+    evidence_script = Path(__file__).with_name("unit_evidence.py")
+    spec = importlib.util.spec_from_file_location("code_speedrun_unit_evidence", evidence_script)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Cannot load evidence validator: {evidence_script}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    fingerprints = module.fingerprints(root)
+    snapshot = {
+        "overview": hashlib.sha256(
+            json.dumps(fingerprints, sort_keys=True).encode("utf-8")
+        ).hexdigest()
+    }
+    for source, _ in expected:
+        if source.name == "overview.md":
+            continue
+        unit = source.stem
+        record = module.validate(root, unit)
+        expected_ref = f"learning/evidence/{unit}.json"
+        markdown = source.read_text(encoding="utf-8")
+        if expected_ref not in markdown:
+            raise ValueError(f"{source}: must cite {expected_ref}")
+        snippets = list(re.finditer(
+            r"```[^\n]*\bsrc=([^\s`]+)[^\n]*\blines=(\d+)-(\d+)",
+            markdown,
+        ))
+        if not snippets:
+            raise ValueError(f"{source}: missing source-backed fenced code excerpt")
+        permitted = {item["path"] for item in record["sources"]}
+        for match in snippets:
+            path, first, last = match.group(1), int(match.group(2)), int(match.group(3))
+            if path not in permitted:
+                raise ValueError(f"{source}: source excerpt {path} not included in Unit Evidence")
+            source_path = module.inside(root, path)
+            count = len(source_path.read_text(encoding="utf-8").splitlines())
+            if first < 1 or last < first or last > count:
+                raise ValueError(f"{source}: invalid source lines {path}:{first}-{last} (file has {count})")
+        snapshot[unit] = fingerprints[unit]
+    return snapshot
+
+
+def check(
+    root: Path,
+    expected: list[tuple[Path, Path]],
+    require_evidence: bool = False,
+) -> None:
     manifest_path = root / "learning" / "manifest.json"
     if not manifest_path.is_file():
         raise FileNotFoundError(f"Missing render manifest: {manifest_path}")
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     if manifest.get("schema_version") != VERSION:
         raise ValueError("Unsupported or missing learning manifest schema")
+    evidence = evidence_snapshot(root, expected) if require_evidence else None
+    if require_evidence and manifest.get("evidence") != evidence:
+        raise ValueError("Rendered HTML is stale: Unit Evidence or source changed; rerun renderer")
     recorded = {row["source"]: row for row in manifest["pages"]}
     if set(recorded) != {s.relative_to(root).as_posix() for s, _ in expected}:
         raise ValueError("Learning manifest does not cover every current Unit")
@@ -103,9 +153,15 @@ def check(root: Path, expected: list[tuple[Path, Path]]) -> None:
     print(f"Verified {len(expected)} learning pages: {manifest_path}")
 
 
-def render(root: Path, expected: list[tuple[Path, Path]], cli: list[str]) -> None:
+def render(
+    root: Path,
+    expected: list[tuple[Path, Path]],
+    cli: list[str],
+    require_evidence: bool = False,
+) -> None:
     # Validate the full set before invoking the renderer.
     inputs = [(src, out, validate_draft(src)) for src, out in expected]
+    evidence = evidence_snapshot(root, expected) if require_evidence else None
     for src, out, _ in inputs:
         cmd = [
             *cli, "render", src.relative_to(root).as_posix(),
@@ -122,6 +178,7 @@ def render(root: Path, expected: list[tuple[Path, Path]], cli: list[str]) -> Non
     manifest = {
         "schema_version": VERSION,
         "renderer": "answer-me-with-html",
+        **({"evidence": evidence} if evidence is not None else {}),
         "pages": [
             {
                 "source": src.relative_to(root).as_posix(),
@@ -133,7 +190,7 @@ def render(root: Path, expected: list[tuple[Path, Path]], cli: list[str]) -> Non
     }
     path = root / "learning" / "manifest.json"
     path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    check(root, expected)
+    check(root, expected, require_evidence=require_evidence)
 
 
 def main() -> int:
@@ -141,6 +198,10 @@ def main() -> int:
     parser.add_argument("speedrun_dir", type=Path, help="Generated speedrun project root")
     parser.add_argument("--am", help="Installed am command or absolute scripts/am.mjs path")
     parser.add_argument("--check", action="store_true", help="Verify pages and detect stale HTML")
+    parser.add_argument(
+        "--require-evidence", action="store_true",
+        help="Require fresh execution evidence, its source hashes and source-backed excerpts",
+    )
     args = parser.parse_args()
     try:
         root = args.speedrun_dir.expanduser().resolve()
@@ -148,9 +209,9 @@ def main() -> int:
             raise FileNotFoundError(f"Speedrun directory does not exist: {root}")
         expected = pages(root)
         if args.check:
-            check(root, expected)
+            check(root, expected, require_evidence=args.require_evidence)
         else:
-            render(root, expected, command_for_am(args.am))
+            render(root, expected, command_for_am(args.am), require_evidence=args.require_evidence)
     except (ValueError, FileNotFoundError, RuntimeError, OSError, subprocess.TimeoutExpired) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
