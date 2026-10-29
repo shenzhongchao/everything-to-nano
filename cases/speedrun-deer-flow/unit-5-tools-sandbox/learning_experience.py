@@ -7,7 +7,6 @@ an additional visual explainer; the original runnable unit remains unchanged.
 from __future__ import annotations
 
 import argparse
-import html
 import json
 import re
 import shutil
@@ -198,8 +197,14 @@ def generate(output: Path, am_script: str | None = None, no_am: bool = False) ->
     markdown_path.write_text(lesson_markdown(trace), encoding="utf-8")
     replay_path.write_text(render_replay(trace), encoding="utf-8")
     files = {"trace": trace_path, "replay": replay_path, "lesson_markdown": markdown_path}
-    if not no_am and render_with_am(markdown_path, html_path, am_script):
-        files["lesson_html"] = html_path
+    if not no_am:
+        try:
+            if render_with_am(markdown_path, html_path, am_script):
+                files["lesson_html"] = html_path
+        except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
+            if am_script:
+                raise  # Explicit --am errors should be visible to the caller.
+            print(f"Optional am renderer failed ({error}); replay.html is still ready", file=sys.stderr)
     return files
 
 
