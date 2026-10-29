@@ -20,6 +20,16 @@ Apply this checklist after structural verification and before handoff.
 - Every unit includes Key Terminology, runnable commands, expected output, exercises, and a Debug Guide.
 - Cross-references between related units are accurate.
 
+## Visual Explanations (Answer me with HTML)
+
+- `learning/overview.md` and `learning/overview.html` exist for the project-level learning map.
+- Every Unit has a corresponding `learning/unit-N-<slug>.md/.html` pair.
+- `scripts/render_learning_pages.py --check` succeeds and shows no stale drafts or missing artifacts.
+- Root README and every unit README link to their actual rendered HTML page.
+- Every explanation uses real generated code and validated runtime observations; source excerpts have valid paths and line numbers.
+- Each unit explanation includes a prediction/change/re-run exercise and explicit simplification boundaries.
+- If `am` is unavailable, report HTML as blocked, **not passed**. Run-only completion must be distinguished from full Speedrun delivery.
+
 ## Debugging
 
 - `.vscode/launch.json` or the runtime-equivalent debug config points at real unit entry points.
