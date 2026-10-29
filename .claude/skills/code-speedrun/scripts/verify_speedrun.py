@@ -74,6 +74,10 @@ def main() -> int:
         "--require-html", action="store_true",
         help="Require all Answer me with HTML pages, manifest and README links",
     )
+    parser.add_argument(
+        "--require-evidence", action="store_true",
+        help="Require fresh verified Unit Evidence for every HTML lesson",
+    )
     args = parser.parse_args()
 
     root = Path(args.speedrun_dir)
@@ -118,13 +122,15 @@ def main() -> int:
         if not unit_contains_sibling_references(unit_one, siblings):
             warnings.append("Unit 1 does not appear to reference sibling units")
 
+    if args.require_evidence and not args.require_html:
+        errors.append("--require-evidence needs --require-html")
     if args.require_html and units:
         try:
             from render_learning_pages import check, pages
 
             full_root = root.resolve()
-            check(full_root, pages(full_root))
-        except (ValueError, KeyError, FileNotFoundError, OSError) as exc:
+            check(full_root, pages(full_root), require_evidence=args.require_evidence)
+        except (ValueError, KeyError, TypeError, FileNotFoundError, OSError, json.JSONDecodeError) as exc:
             errors.append(f"HTML learning pages: {exc}")
         root_readme = root / "README.md"
         if root_readme.is_file() and "learning/overview.html" not in root_readme.read_text(encoding="utf-8"):
