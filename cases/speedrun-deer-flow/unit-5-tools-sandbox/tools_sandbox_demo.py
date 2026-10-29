@@ -351,7 +351,11 @@ def run_langgraph_sandbox_demo(
     sandbox: SandboxProtocol,
     model: object,
     runtime: TeachingToolRuntime | None = None,
+    capture_events: bool = False,
 ) -> dict[str, object]:
+    # LEARN: Instrument the actual LangGraph node/edge callbacks, not a narrated
+    # approximation of the workflow. Opt in to preserve old API output.
+    execution_events: list[dict[str, object]] = []
     runtime = runtime or build_tool_runtime(
         thread_id="thread-langgraph",
         sandbox=sandbox,
@@ -366,6 +370,19 @@ def run_langgraph_sandbox_demo(
         # A LangGraph node receives conversation state, asks the model what to do next,
         # and stores the AIMessage back into the graph state.
         response = model_with_tools.invoke(state["messages"])
+        if capture_events:
+            calls = getattr(response, "tool_calls", [])
+            execution_events.append({
+                "kind": "model",
+                "title": "模型提出工具调用" if calls else "模型给出最终回答",
+                "description": "真正执行了模型节点；该 AIMessage 将进入条件边。",
+                "source": "call_model",
+                "input": {"message_count": len(state["messages"])},
+                "output": {
+                    "tool_calls": [{"name": call["name"], "args": call["args"]} for call in calls],
+                    "content": str(response.content),
+                },
+            })
         return {"messages": [response]}
 
     def call_tools(state: AgentState) -> dict[str, object]:
@@ -374,6 +391,15 @@ def run_langgraph_sandbox_demo(
         trace = list(state.get("tool_trace", []))
         for tool_call in getattr(last_message, "tool_calls", []):
             result = dispatch_runtime_tool(runtime, tool_call["name"], tool_call["args"])
+            if capture_events:
+                execution_events.append({
+                    "kind": "tool",
+                    "title": f"执行工具 {tool_call['name']}",
+                    "description": "Runtime 派发真实工具请求，执行结果包装为 ToolMessage。",
+                    "source": "call_tools",
+                    "input": {"tool": tool_call["name"], "args": dict(tool_call["args"])},
+                    "output": result,
+                })
             trace.append(
                 {
                     "tool": tool_call["name"],
@@ -394,9 +420,18 @@ def run_langgraph_sandbox_demo(
 
     def next_step(state: AgentState) -> str:
         last_message = state["messages"][-1]
-        if getattr(last_message, "tool_calls", []):
-            return "tools"
-        return END
+        has_tool_calls = bool(getattr(last_message, "tool_calls", []))
+        route = "tools" if has_tool_calls else END
+        if capture_events:
+            execution_events.append({
+                "kind": "route",
+                "title": "转入 Tools 节点" if has_tool_calls else "结束图执行",
+                "description": "LangGraph 按 AIMessage.tool_calls 选择实际分支。",
+                "source": "next_step",
+                "input": {"has_tool_calls": has_tool_calls},
+                "output": {"next_node": "tools" if has_tool_calls else "END"},
+            })
+        return route
 
     graph = StateGraph(AgentState)
     graph.add_node("model", call_model)
@@ -411,6 +446,7 @@ def run_langgraph_sandbox_demo(
         "final_message": _last_ai_text(result["messages"]),
         "tool_trace": result["tool_trace"],
         "messages": [_message_summary(message) for message in result["messages"]],
+        **({"execution_events": execution_events} if capture_events else {}),
     }
 
 
@@ -437,7 +473,7 @@ def run_live_langgraph_sandbox_demo() -> dict[str, object]:
     return run_langgraph_sandbox_demo(prompt=prompt, sandbox=sandbox, model=model, runtime=runtime)
 
 
-def run_demo(*, live: bool = False) -> dict[str, object]:
+def run_demo(*, live: bool = False, capture_events: bool = False) -> dict[str, object]:
     registry = build_tool_registry(
         config_tools=[
             type("Tool", (), {"name": "bash"})(),
@@ -448,6 +484,8 @@ def run_demo(*, live: bool = False) -> dict[str, object]:
     )
 
     if live:
+        if capture_events:
+            raise ValueError("Capturing potentially sensitive live tool arguments is disabled")
         agent_result = run_live_langgraph_sandbox_demo()
         mode = "live-openai-compatible-docker"
     else:
@@ -476,6 +514,7 @@ def run_demo(*, live: bool = False) -> dict[str, object]:
             sandbox=sandbox,
             model=model,
             runtime=runtime,
+            capture_events=capture_events,
         )
         mode = "offline-scripted-langgraph"
 
