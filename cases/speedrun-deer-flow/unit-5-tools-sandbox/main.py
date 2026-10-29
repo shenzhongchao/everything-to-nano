@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from pathlib import Path
 
 from tools_sandbox_demo import run_demo
 
@@ -23,7 +24,7 @@ if __name__ == "__main__":
         if args.live:
             parser.error("--learn only supports the deterministic offline teaching mode")
         from learning_experience import generate
-        artifacts = generate(__import__("pathlib").Path(__file__).resolve().parent / "learning-output")
+        artifacts = generate(Path(__file__).resolve().parent / "learning-output")
         for label, path in artifacts.items():
             print(f"{label}: {path}")
         if "lesson_html" not in artifacts:
