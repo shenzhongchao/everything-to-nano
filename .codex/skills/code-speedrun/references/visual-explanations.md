@@ -11,7 +11,8 @@ For each newly generated `speedrun-<repo>/`, produce:
 - `learning/overview.md` → `learning/overview.html`
 - `learning/unit-1-<slug>.md` → `learning/unit-1-<slug>.html`
 - One matching Markdown/HTML pair for every other unit
-- `learning/manifest.json`, written by the renderer
+- `learning/evidence/unit-N-<slug>.json` from a real, verified unit execution
+- `learning/manifest.json`, written by the renderer and bound to evidence fingerprints
 - Root README link to `learning/overview.html`
 - Every Unit README link to its matching `../learning/unit-N-<slug>.html`
 
@@ -25,7 +26,7 @@ fork the upstream renderer to fabricate a learning page.
 
 ## Preconditions and renderer discovery
 
-1. Verify the runnable unit, its actual output, and the exact source locations.
+1. Capture and verify one real Unit Evidence record for each unit, following [unit-evidence.md](unit-evidence.md). Evidence is the authoritative source of observed outputs and source fingerprints.
 2. Use an installed `am` executable, or the upstream
    `skills/answer-me-with-html/scripts/am.mjs` with Node.js 20+.
 3. Never run `npm install`, `npx -y`, or download/update a skill without user
@@ -38,8 +39,8 @@ Render from the generated speedrun root, not the source repository. The bundled
 adapter resolves installed renderers and gives clear errors:
 
 ```bash
-python /absolute/path/to/code-speedrun/scripts/render_learning_pages.py ./speedrun-project
-python /absolute/path/to/code-speedrun/scripts/render_learning_pages.py ./speedrun-project --check
+python /absolute/path/to/code-speedrun/scripts/render_learning_pages.py ./speedrun-project --require-evidence
+python /absolute/path/to/code-speedrun/scripts/render_learning_pages.py ./speedrun-project --check --require-evidence
 ```
 
 For a nonstandard location, provide
@@ -53,6 +54,7 @@ A useful page explains **one reasoning path with evidence**, not a wall of prose
 formatted into cards. Start with the behavior someone can run, then explain
 how code produces it. Every unit page should contain:
 
+0. **Evidence link:** every Unit page references its exact `learning/evidence/unit-N-<slug>.json` and uses observed outputs and verified source snippets from that file.
 1. **Plain-language question and goal:** what can learners predict after the unit?
 2. **System relationship:** use `flow`, `sequence`, or `tree` to show the
    observed main path. Use `er` only for true data-model relations.
@@ -125,7 +127,7 @@ output without matching the generated source and executing that actual unit.
 - For each unit, code snippets point at real files and valid line ranges.
 - Every diagram matches the generated code, **not a more complex original**.
 - At least one prediction/change/re-run prompt per unit.
-- Verify `learning/manifest.json` using `--check`. If Markdown later changes,
+- Verify `learning/manifest.json` using `--check --require-evidence`. The evidence record and the source's SHA-256 must still match; source excerpts must point to files and valid line numbers covered by evidence. If Markdown later changes,
   re-render; the check detects stale drafts using SHA-256.
 - The original run commands and debug configurations remain functional.
 - State clearly if `am` is not installed and HTML could not be rendered.
