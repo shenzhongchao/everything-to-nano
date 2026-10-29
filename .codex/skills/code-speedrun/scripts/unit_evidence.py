@@ -192,17 +192,22 @@ def main() -> int:
     do.add_argument("--cwd", default=".")
     do.add_argument("--mode", default="offline-demo")
     do.add_argument("--timeout", type=int, default=90)
-    do.add_argument("command", nargs=argparse.REMAINDER)
     check = sub.add_parser("check", help="Check source fingerprints without running commands")
     check.add_argument("speedrun_dir", type=Path)
     check.add_argument("--unit", help="Check one unit, otherwise all units")
-    args = parser.parse_args()
+    # Parse command after -- separately: argparse.REMAINDER would consume all
+    # capture options placed after the speedrun_dir positional argument.
+    argv = sys.argv[1:]
+    command = []
+    if "--" in argv:
+        marker = argv.index("--")
+        command, argv = argv[marker + 1:], argv[:marker]
+    args = parser.parse_args(argv)
     try:
         root = args.speedrun_dir.expanduser().resolve()
         if not root.is_dir():
             raise FileNotFoundError(f"No such Speedrun root: {root}")
         if args.action == "capture":
-            command = args.command[1:] if args.command and args.command[0] == "--" else args.command
             output = capture(
                 root, unit=args.unit, command=command, sources=args.sources,
                 question=args.question, change=args.change, observe=args.observe,
