@@ -70,6 +70,10 @@ def unit_contains_sibling_references(unit_dir: Path, siblings: list[Path]) -> bo
 def main() -> int:
     parser = argparse.ArgumentParser(description="Verify a generated speedrun directory.")
     parser.add_argument("speedrun_dir", help="Path to speedrun-<repo-name>")
+    parser.add_argument(
+        "--require-html", action="store_true",
+        help="Require all Answer me with HTML pages, manifest and README links",
+    )
     args = parser.parse_args()
 
     root = Path(args.speedrun_dir)
@@ -113,6 +117,23 @@ def main() -> int:
         siblings = [unit for unit in units if unit != unit_one]
         if not unit_contains_sibling_references(unit_one, siblings):
             warnings.append("Unit 1 does not appear to reference sibling units")
+
+    if args.require_html and units:
+        try:
+            from render_learning_pages import check, pages
+
+            full_root = root.resolve()
+            check(full_root, pages(full_root))
+        except (ValueError, KeyError, FileNotFoundError, OSError) as exc:
+            errors.append(f"HTML learning pages: {exc}")
+        root_readme = root / "README.md"
+        if root_readme.is_file() and "learning/overview.html" not in root_readme.read_text(encoding="utf-8"):
+            errors.append("Root README does not link to learning/overview.html")
+        for unit in units:
+            unit_readme = unit / "README.md"
+            expected_link = f"../learning/{unit.name}.html"
+            if unit_readme.is_file() and expected_link not in unit_readme.read_text(encoding="utf-8"):
+                errors.append(f"{unit.name} README does not link to {expected_link}")
 
     if errors:
         for error in errors:
