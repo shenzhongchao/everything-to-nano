@@ -1,0 +1,43 @@
+name: Code Speedrun HTML integration
+on:
+  pull_request:
+    paths:
+      - ".codex/skills/code-speedrun/**"
+      - ".claude/skills/code-speedrun/**"
+      - "tests/test_speedrun_html_pipeline.py"
+      - "tests/smoke_real_am.py"
+      - ".github/workflows/code-speedrun-html.yml"
+  push:
+    paths:
+      - ".codex/skills/code-speedrun/**"
+      - ".claude/skills/code-speedrun/**"
+      - "tests/test_speedrun_html_pipeline.py"
+      - "tests/smoke_real_am.py"
+      - ".github/workflows/code-speedrun-html.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  html-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: python -m pip install pytest
+      - name: Verify both skill adapters, missing pages, stale Markdown and links
+        run: python -m pytest tests/test_speedrun_html_pipeline.py -q
+      - name: Fetch pinned Answer me with HTML (no global install)
+        run: |
+          git clone --depth 1 https://github.com/QingYunA/answer-me-with-html.git /tmp/answer-me-with-html
+          git -C /tmp/answer-me-with-html fetch --depth 1 origin 2fa51dfab5495839425bc2279fa8790cd3601e58
+          git -C /tmp/answer-me-with-html checkout --detach 2fa51dfab5495839425bc2279fa8790cd3601e58
+      - name: Render and verify pages with actual am.mjs
+        run: |
+          python tests/smoke_real_am.py /tmp/answer-me-with-html/skills/answer-me-with-html/scripts/am.mjs
