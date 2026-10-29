@@ -69,23 +69,35 @@ def main() -> None:
             "```py src=unit-1-overall/main.py lines=1-4 hl=2\n"
             "```\n"
             "## C Simplification boundary\n"
-            "This unit intentionally uses no external services.\n",
+            "This unit intentionally uses no external services.\n"
+            "Verified run: learning/evidence/unit-1-overall.json\n",
             encoding="utf-8",
         )
         subprocess.run(
             [sys.executable, str(unit / "main.py")], cwd=root, check=True,
         )
+        capture = REPO / ".codex/skills/code-speedrun/scripts/unit_evidence.py"
         subprocess.run(
-            [sys.executable, str(ADAPTER), str(root), "--am", str(am)],
+            [sys.executable, str(capture), "capture", str(root),
+             "--unit", "unit-1-overall", "--source", "unit-1-overall/main.py",
+             "--question", "Will the function still print after changing return?",
+             "--change", "Change the return literal to GOODBYE.",
+             "--observe", "Compare recorded stdout with the new run.",
+             "--", sys.executable, "unit-1-overall/main.py"],
             cwd=root, check=True,
         )
         subprocess.run(
-            [sys.executable, str(ADAPTER), str(root), "--check"],
+            [sys.executable, str(ADAPTER), str(root), "--require-evidence",
+             "--am", str(am)],
+            cwd=root, check=True,
+        )
+        subprocess.run(
+            [sys.executable, str(ADAPTER), str(root), "--check", "--require-evidence"],
             cwd=root, check=True,
         )
         subprocess.run(
             [sys.executable, str(REPO / ".codex/skills/code-speedrun/scripts/verify_speedrun.py"),
-             "--require-html", str(root)], cwd=root, check=True,
+             "--require-html", "--require-evidence", str(root)], cwd=root, check=True,
         )
         for name in ("overview", "unit-1-overall"):
             html = learning / f"{name}.html"
