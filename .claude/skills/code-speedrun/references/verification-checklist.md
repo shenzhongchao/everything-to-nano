@@ -24,7 +24,9 @@ Apply this checklist after structural verification and before handoff.
 
 - `learning/overview.md` and `learning/overview.html` exist for the project-level learning map.
 - Every Unit has a corresponding `learning/unit-N-<slug>.md/.html` pair.
-- `scripts/render_learning_pages.py --check` succeeds and shows no stale drafts or missing artifacts.
+- Each Unit has evidence from actual offline execution: argv, return code, observed outputs, source SHA-256 and prediction/change/rerun exercise.
+- `scripts/unit_evidence.py check` validates every source fingerprint after extraction.
+- `scripts/render_learning_pages.py --check --require-evidence` succeeds and shows no stale evidence, source code, drafts or missing artifacts.
 - Root README and every unit README link to their actual rendered HTML page.
 - Every explanation uses real generated code and validated runtime observations; source excerpts have valid paths and line numbers.
 - Each unit explanation includes a prediction/change/re-run exercise and explicit simplification boundaries.
