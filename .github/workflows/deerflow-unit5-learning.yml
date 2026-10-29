@@ -32,3 +32,16 @@ jobs:
           test -s unit-5-tools-sandbox/learning-output/trace.json
           test -s unit-5-tools-sandbox/learning-output/replay.html
           test -s unit-5-tools-sandbox/learning-output/lesson.md
+      - name: Capture and verify real DeerFlow Unit 5 evidence
+        run: |
+          python ../../.codex/skills/code-speedrun/scripts/unit_evidence.py capture . \
+            --unit unit-5-tools-sandbox \
+            --source unit-5-tools-sandbox/main.py \
+            --source unit-5-tools-sandbox/tools_sandbox_demo.py \
+            --mode offline-scripted-langgraph \
+            --question "Without tool_calls, does LangGraph enter the tools node?" \
+            --change "Alter ScriptedToolCallingModel to return an AIMessage without tool_calls." \
+            --observe "Compare final_message and tool_trace from the printed JSON." \
+            -- python unit-5-tools-sandbox/main.py
+          python ../../.codex/skills/code-speedrun/scripts/unit_evidence.py check . --unit unit-5-tools-sandbox
+          test -s learning/evidence/unit-5-tools-sandbox.json
