@@ -7,6 +7,9 @@ Use this template when writing `unit-N-<slug>/README.md`. Keep the final README 
 
 > **Motto**: *[Short memorable phrase]*
 
+## Visual Explanation
+[Open this Unit's visual explanation](../learning/unit-N-<slug>.html)
+
 ## In Plain Language
 [Explain the concept in 1-2 sentences a non-specialist could follow.]
 
@@ -49,5 +52,6 @@ Checklist before finishing the README:
 - Open with plain language before jargon.
 - Define every specialized term before using it.
 - Keep the walkthrough anchored to the extracted code, not the original repository.
+- Replace the visual explanation link with the **actual** unit folder name, and ensure the linked HTML file exists.
 - Include exact commands, not vague instructions.
 - Include at least one Explain-It-Back exercise.
