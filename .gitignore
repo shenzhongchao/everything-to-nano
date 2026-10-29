@@ -23,6 +23,9 @@ htmlcov/
 venv/
 env/
 
+# Generated offline teaching outputs
+**/learning-output/
+
 # Node and frontend package artifacts
 node_modules/
 npm-debug.log*
