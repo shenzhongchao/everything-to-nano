@@ -23,6 +23,7 @@ Load bundled resources only when needed:
 - Use [references/root-files-template.md](references/root-files-template.md) when writing the top-level `README.md` and `SIMPLIFICATIONS.md`.
 - Use [references/debug-guide.md](references/debug-guide.md) when writing each unit's Debug Guide and the root `.vscode/launch.json`.
 - Use [references/verification-checklist.md](references/verification-checklist.md) before handoff.
+- **Always use** [references/unit-evidence.md](references/unit-evidence.md) to capture real execution evidence before writing learning pages.
 - **Always use** [references/visual-explanations.md](references/visual-explanations.md) when creating a new Speedrun: it defines the required Answer me with HTML explanation deliverables and content contract.
 - Use `scripts/render_learning_pages.py` to render and validate the HTML learning pages after the runnable units have been verified.
 - Use `scripts/scaffold_speedrun.py` to generate the directory skeleton when that saves time.
@@ -181,16 +182,40 @@ Then apply the manual acceptance checklist in [references/verification-checklist
 - The root `README.md` states what the original project is and what the speedrun covers; it must not jump straight into the decomposition.
 - Each unit's source contains clear inline teaching comments at the important non-obvious points, or the unit README explicitly says why inline comments were unnecessary.
 
+### Phase 4.5: Capture Unit Evidence (Required for new Speedruns)
+
+After running and validating the units, **before authoring HTML explanations**,
+capture one real execution per unit with the bundled `scripts/unit_evidence.py`.
+Read [references/unit-evidence.md](references/unit-evidence.md) for the exact
+CLI contract and safe output handling.
+
+1. Choose a deterministic, reviewed offline command per unit; do not record
+   live credentials, private data, or production LLM interactions.
+2. Explicitly record all generated source files that each explanation will
+   cite. The helper captures actual stdout/stderr, the exact argv, source
+   SHA-256, exit code, execution mode and one predict/change/rerun exercise in
+   `learning/evidence/unit-N-<slug>.json`.
+3. Review execution results for accuracy and sensitive output. Do not fabricate
+   events or substitute narrated flow for real execution.
+4. Run `scripts/unit_evidence.py check <speedrun-dir>` across all units.
+   Source modification after capture invalidates the evidence, so rerun the
+   capture after changing code.
+5. If a unit cannot run, report the blocker: do not silently invent evidence
+   or mark the visual explanation stage as complete.
+
 ### Phase 5: Generate and Verify HTML Learning Explanations (Required)
 
 Only do this **after** executing and validating the extracted runnable units.
 
 1. Create `learning/overview.md`, plus `learning/unit-N-<slug>.md`
    for **every** unit in the generated Speedrun. These are authored educational
-   narratives based on inspected source and observed unit output, NOT generated
+   narratives explicitly grounded in `learning/evidence/unit-N-<slug>.json`,
+   inspected source and observed unit output, NOT generated
    from a generic Markdown boilerplate. Follow
    `references/visual-explanations.md` for diagrams, annotated source,
    prediction/re-run exercises, and explicit teaching simplifications.
+   Every unit page must link to its evidence JSON and contain at least one
+   code excerpt pointing to an evidenced source file and real line numbers.
 2. The overview is the entry point: what the original project does, a visual
    main flow, a learning-order map, and links back to runnable units. Each
    per-unit page explains the actual reduced code path and one experiment.
@@ -200,8 +225,8 @@ Only do this **after** executing and validating the extracted runnable units.
 4. Run the bundled adapter (use the absolute path to this skill's script):
 
    ```bash
-   python /path/to/code-speedrun/scripts/render_learning_pages.py ./speedrun-<repo-name>
-   python /path/to/code-speedrun/scripts/render_learning_pages.py ./speedrun-<repo-name> --check
+   python /path/to/code-speedrun/scripts/render_learning_pages.py ./speedrun-<repo-name> --require-evidence
+   python /path/to/code-speedrun/scripts/render_learning_pages.py ./speedrun-<repo-name> --check --require-evidence
    ```
 
    Use `--am /absolute/path/to/scripts/am.mjs` if the renderer is not installed
@@ -211,9 +236,10 @@ Only do this **after** executing and validating the extracted runnable units.
 5. Check page accuracy against actual generated code: `src=` paths and line
    ranges exist, diagrams match real simplified control flow, expected outputs
    were observed, and mock/simulation boundaries are explicit.
-6. Re-run `scripts/verify_speedrun.py --require-html <speedrun-dir>` to
+6. Re-run `scripts/verify_speedrun.py --require-html --require-evidence <speedrun-dir>` to
    verify the full deliverable, including every HTML page and README link.
-   A missing CLI, missing page, or stale Markdown is **not** a successful
+   A missing CLI, missing page, stale Markdown, stale source hash, missing
+   evidence, or code snippet outside its evidenced sources is **not** a successful
    complete Speedrun. Report runnable-code success and HTML blocker separately.
 7. In the final handoff link the generated **overview.html** and the original
    README; do not just print a filesystem path or say "HTML can be generated".
