@@ -55,7 +55,7 @@ python unit-5-tools-sandbox/main.py --learn
 
 Then open `unit-5-tools-sandbox/learning-output/replay.html`. It replays events collected from **actual offline LangGraph node/edge execution**, links each step to source functions, and asks you to predict a no-tool-call experiment before seeing its recorded result.
 
-The same run writes `trace.json` and an `answer-me-with-html`-compatible `lesson.md`. If the optional `am` CLI is installed, it also renders `lesson.html`; otherwise the replay works entirely offline. See [Unit 5 learning lab](unit-5-tools-sandbox/README.md#visual-learning-lab-run--see--explain--change) for details and limitations.
+The same run writes `trace.json` and an `answer-me-with-html`-compatible `lesson.md`. If the optional `am` CLI is installed, it also renders `lesson.html`; otherwise the replay works entirely offline. See [Unit 5 learning lab](unit-5-tools-sandbox/README.md) for details and limitations.
 
 ## Learning Path
 
