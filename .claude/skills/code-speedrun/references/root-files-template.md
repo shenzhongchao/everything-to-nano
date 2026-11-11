@@ -17,6 +17,12 @@ Use these patterns for files at `speedrun-<repo-name>/`.
 [How to run Unit 1]
 [How to run all units, if applicable]
 
+## Visual Learning
+[Open the interactive visual learning overview](learning/overview.html)
+
+Each Unit README also links to its own `learning/unit-N-<slug>.html` explanation.
+The HTML pages are produced by Answer me with HTML **after** unit execution checks.
+
 ## Learning Path
 
 | Unit | Title | Motto | Concept |
@@ -37,6 +43,7 @@ Rules:
 - Keep Quick Start copy-pasteable.
 - Make the Learning Path table complete for every unit.
 - Keep this file as the single entry point for learners.
+- Link to the **existing** `learning/overview.html`; each Unit README links to `../learning/unit-N-<slug>.html`. Ensure these are rendered before handoff.
 
 ## Root `SIMPLIFICATIONS.md`
 

@@ -40,6 +40,37 @@ speedrun-<repo-name>/
     └── ...
 ```
 
+## 自动生成可视化讲解
+
+Code Speedrun 现在把 [Answer me with HTML](https://github.com/QingYunA/answer-me-with-html) 纳入 **Skill 的默认生成流程**，不再只输出代码和 README。每个新生成的 Speedrun 会先构建并验证可执行 Unit，并为每个 Unit 捕捉实际运行证据（命令、输出、源码哈希和修改实验），再由 Agent 基于证据编写讲解稿，调用上游 `am` CLI 渲染独立 HTML：
+
+```text
+speedrun-<repo-name>/
+├── README.md
+├── SIMPLIFICATIONS.md
+├── learning/
+│   ├── evidence/unit-N-xxx.json
+│   ├── overview.md / overview.html
+│   ├── unit-1-overall.md / unit-1-overall.html
+│   ├── unit-2-<slug>.md / unit-2-<slug>.html
+│   └── manifest.json
+└── unit-N-<slug>/
+    ├── README.md       # 包含对应 HTML 讲解链接
+    └── ...             # 可运行代码
+```
+
+项目总览侧重结构与学习顺序；每个 Unit 的页面结合流程图、真实源码引用、已验证输出、简化边界和“预测→修改→运行”的练习。HTML 是可离线打开的静态讲解页，**不宣称能在浏览器里运行 Python 或调试器**。
+
+**依赖：** 制作 HTML 时需要预先安装 Answer me with HTML（Node.js 20+）。Skill 不会擅自安装外部依赖；如果缺少渲染器，会保存 Markdown 草稿，明确报告 HTML 部分未完成，不会影响原有可运行代码。
+
+验证：
+
+```bash
+python /path/to/code-speedrun/scripts/unit_evidence.py check speedrun-<repo-name>
+python /path/to/code-speedrun/scripts/render_learning_pages.py speedrun-<repo-name> --require-evidence
+python /path/to/code-speedrun/scripts/verify_speedrun.py --require-html --require-evidence speedrun-<repo-name>
+```
+
 ## 核心设计决策
 
 - **先跑后读** — 每个 unit 都有可执行的入口，在读任何一行解释之前就能跑起来

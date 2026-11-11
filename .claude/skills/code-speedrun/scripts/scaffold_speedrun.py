@@ -121,6 +121,9 @@ def write_root_readme(path: Path, repo_name: str, units: list[Unit], source_url:
             "[Install command]",
             "[Run Unit 1]",
             "",
+            "## Visual Learning",
+            "[Open the evidence-backed visual overview](learning/overview.html)",
+            "",
             "## Learning Path",
             "",
             "| Unit | Title | Motto | Concept |",
@@ -167,6 +170,9 @@ def write_unit_readme(path: Path, unit: Unit, entry_file: str) -> None:
     content = f"""# Unit {unit.number}: {unit.title}
 
 > **Motto**: *{unit.motto}*
+
+## Visual Learning
+[Open the evidence-backed explanation](../learning/unit-{unit.number}-{unit.slug}.html)
 
 ## In Plain Language
 [Explain the concept in plain language.]

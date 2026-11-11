@@ -36,7 +36,7 @@ Agent 不是一个大函数。更准确地说，它是一圈循环：模型先�
 
 这里的 MCP 只说明“外部工具会被算进工具来源”。MCP server config、mtime cache、deferred registry 和 `tool_search` 的完整流程在 `Unit 9` 单独展开。
 
-如果你想把真实环境里的上传、runtime、sandbox、tool call 和 artifact 返回完整串起来，先读 [REAL-SANDBOX-FLOW.md](/root/key_projects/learn-codebase/cases/speedrun-deer-flow/unit-5-tools-sandbox/REAL-SANDBOX-FLOW.md)。
+如果你想把真实环境里的上传、runtime、sandbox、tool call 和 artifact 返回完整串起来，先读 [REAL-SANDBOX-FLOW.md](REAL-SANDBOX-FLOW.md)。
 
 对应真实源码：
 
@@ -77,6 +77,46 @@ python unit-5-tools-sandbox/main.py --live
 ```
 
 如果你用的是其它 OpenAI-compatible 服务，只改 `OPENAI_BASE_URL` 和 `OPENAI_MODEL`。
+
+## Visual learning lab: Run → See → Explain → Change
+
+This unit also includes an **evidence-backed, offline learning experience**. It is opt-in: normal `main.py`, `--live`, and the other units continue to work as before.
+
+From `cases/speedrun-deer-flow/`:
+
+```bash
+python unit-5-tools-sandbox/main.py --learn
+```
+
+Open `unit-5-tools-sandbox/learning-output/replay.html` in a browser. It contains a recorded **baseline** and a second **no-tool-call** experiment:
+
+1. **Run:** the original scripted LangGraph agent runs in local teaching mode.
+2. **See:** instrumented `call_model`, `next_step`, and `call_tools` events appear in sequence. These are recorded by the actual callbacks, not LLM-invented steps.
+3. **Explain:** select any event to examine its input, output, source function, and significance.
+4. **Change:** predict what happens when the model returns no `tool_calls`; reveal the real second run, then change `NoToolModel.invoke()` in `learning_experience.py` and rerun to test a new hypothesis.
+
+The command writes four kinds of content:
+
+| File | Purpose |
+|---|---|
+| `learning-output/trace.json` | Raw structured events, including provenance and both actual graph runs |
+| `learning-output/replay.html` | Self-contained, offline, interactive execution replay and prediction exercise |
+| `learning-output/lesson.md` | Diagram-driven lesson source for Answer me with HTML |
+| `learning-output/lesson.html` | Extra polished visual explainer, generated **only when** the `am` CLI is available |
+
+**Optional Answer me with HTML integration.** Install the [answer-me-with-html skill](https://github.com/QingYunA/answer-me-with-html) as instructed upstream. If `am` is on `PATH`, `--learn` renders `lesson.html` automatically. Otherwise, explicitly supply the bundled CLI:
+
+```bash
+python unit-5-tools-sandbox/learning_experience.py --am /absolute/path/to/answer-me-with-html/skills/answer-me-with-html/scripts/am.mjs
+```
+
+Node.js 20+ is required for that optional renderer. To generate only the replay and trace without Node or the HTML skill:
+
+```bash
+python unit-5-tools-sandbox/learning_experience.py --no-am
+```
+
+**Scope and integrity:** the default trace uses a `ScriptedToolCallingModel` and local teaching sandbox, **not** production DeerFlow, a live LLM, or Docker. `--learn --live` is intentionally disallowed so live tool arguments are not silently embedded into shareable HTML. Refer to the project's `SIMPLIFICATIONS.md` before drawing conclusions about production behavior.
 
 ## Expected Output
 

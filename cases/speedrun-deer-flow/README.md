@@ -45,6 +45,18 @@ python unit-9-mcp-deferred-tools/main.py
 python unit-10-artifacts-archive-safety/main.py
 ```
 
+## Interactive learning pilot (Unit 5)
+
+To try the new **Run → See → Explain → Change** teaching experience:
+
+```bash
+python unit-5-tools-sandbox/main.py --learn
+```
+
+Then open `unit-5-tools-sandbox/learning-output/replay.html`. It replays events collected from **actual offline LangGraph node/edge execution**, links each step to source functions, and asks you to predict a no-tool-call experiment before seeing its recorded result.
+
+The same run writes `trace.json` and an `answer-me-with-html`-compatible `lesson.md`. If the optional `am` CLI is installed, it also renders `lesson.html`; otherwise the replay works entirely offline. See [Unit 5 learning lab](unit-5-tools-sandbox/README.md) for details and limitations.
+
 ## Learning Path
 
 | Unit | Title | Motto | Concept |
@@ -89,4 +101,4 @@ python unit-10-artifacts-archive-safety/main.py
 
 ## Back To Source
 
-当你跑完这 10 个单元，下一步不要盲读整个仓库。先看 [ORIGINAL-READING-PATH.md](/root/key_projects/learn-codebase/cases/speedrun-deer-flow/ORIGINAL-READING-PATH.md)，按单元对照回到真实 DeerFlow 源码。那份文档会告诉你每个 speedrun 单元对应原仓哪些文件、建议先读哪几个入口、以及用什么 `rg` / `sed` 命令快速定位。
+当你跑完这 10 个单元，下一步不要盲读整个仓库。先看 [ORIGINAL-READING-PATH.md](ORIGINAL-READING-PATH.md)，按单元对照回到真实 DeerFlow 源码。那份文档会告诉你每个 speedrun 单元对应原仓哪些文件、建议先读哪几个入口、以及用什么 `rg` / `sed` 命令快速定位。

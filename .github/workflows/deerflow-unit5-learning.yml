@@ -1,0 +1,56 @@
+name: DeerFlow Unit 5 learning lab
+on:
+  pull_request:
+    paths:
+      - "cases/speedrun-deer-flow/**"
+      - ".github/workflows/deerflow-unit5-learning.yml"
+  push:
+    paths:
+      - "cases/speedrun-deer-flow/**"
+      - ".github/workflows/deerflow-unit5-learning.yml"
+
+jobs:
+  unit5:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: cases/speedrun-deer-flow
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: cases/speedrun-deer-flow/requirements.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: python -m pip install -r requirements.txt
+      - name: Python tests
+        run: python -m pytest tests/test_unit5_langgraph_sandbox.py tests/test_unit5_learning_experience.py -q
+      - name: Generate offline teaching artifacts
+        run: |
+          python unit-5-tools-sandbox/main.py --learn
+          test -s unit-5-tools-sandbox/learning-output/trace.json
+          test -s unit-5-tools-sandbox/learning-output/replay.html
+          test -s unit-5-tools-sandbox/learning-output/lesson.md
+      - name: Capture and verify real DeerFlow Unit 5 evidence
+        run: |
+          python ../../.codex/skills/code-speedrun/scripts/unit_evidence.py capture . \
+            --unit unit-5-tools-sandbox \
+            --source unit-5-tools-sandbox/main.py \
+            --source unit-5-tools-sandbox/tools_sandbox_demo.py \
+            --mode offline-scripted-langgraph \
+            --question "Without tool_calls, does LangGraph enter the tools node?" \
+            --change "Alter ScriptedToolCallingModel to return an AIMessage without tool_calls." \
+            --observe "Compare final_message and tool_trace from the printed JSON." \
+            -- python unit-5-tools-sandbox/main.py
+          python ../../.codex/skills/code-speedrun/scripts/unit_evidence.py check . --unit unit-5-tools-sandbox
+          test -s learning/evidence/unit-5-tools-sandbox.json
+      - name: Test real Unit 5 evidence through Answer me with HTML
+        run: |
+          git clone --depth 1 https://github.com/QingYunA/answer-me-with-html.git /tmp/answer-me-with-html
+          git -C /tmp/answer-me-with-html fetch --depth 1 origin 2fa51dfab5495839425bc2279fa8790cd3601e58
+          git -C /tmp/answer-me-with-html checkout --detach 2fa51dfab5495839425bc2279fa8790cd3601e58
+          python tests/smoke_unit5_evidence_html.py /tmp/answer-me-with-html/skills/answer-me-with-html/scripts/am.mjs
